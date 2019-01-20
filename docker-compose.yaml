@@ -1,0 +1,51 @@
+version: '3'
+services:
+  nginx:
+   container_name: kenzan-nginx
+   image: nginx:1.13
+   restart: always
+   ports:
+   - 80:80
+   - 443:443
+   volumes:
+   - ./nginx/conf.d:/etc/nginx/conf.d
+   depends_on:
+   - app
+
+  mysql:
+   container_name: kenzan-mysql
+   image: mysql/mysql-server:5.7
+   environment:
+    MYSQL_DATABASE: kenzan
+    MYSQL_ROOT_PASSWORD: kenzan
+    MYSQL_ROOT_HOST: '%'
+   ports:
+     - "3306:3306"
+   volumes:
+      - ./data:/docker-entrypoint-initdb.d
+   restart: always
+
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    links:
+      - mysql:mysql
+    ports:
+      - 9191:80
+    environment:
+      MYSQL_USERNAME: root
+      MYSQL_ROOT_PASSWORD: kenzan
+      PMA_HOST: mysql
+
+  app:
+    restart: always
+    build: ./app
+    working_dir: /app
+    volumes:
+      - ./app:/app
+      - ~/.m2:/root/.m2
+    expose:
+      - "8080"
+    command: mvn clean spring-boot:run
+    depends_on:
+      - mysql
